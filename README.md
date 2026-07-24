@@ -39,4 +39,4 @@ Ventra is a modern SaaS platform that helps businesses create stunning websites,
 ```bash
 cd backend
 npm install
-npm run dev
+npm run dev"# ventra-" 
