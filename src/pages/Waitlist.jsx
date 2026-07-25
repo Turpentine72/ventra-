@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import axios from 'axios';
+import api from "../utils/axios";
 import toast from 'react-hot-toast';
 import { Sparkles, Check, ArrowLeft, Users, Loader2 } from 'lucide-react';
 
@@ -11,16 +11,17 @@ const Waitlist = () => {
     email: '',
     phone: '',
     businessCategory: '',
-    featureInterest: ''
+    featureInterest: '',
+    instagram: ''
   });
 
+  const [otherCategory, setOtherCategory] = useState('');
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [queuePosition, setQueuePosition] = useState(0);
   const [touched, setTouched] = useState({});
 
-  // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -83,6 +84,10 @@ const Waitlist = () => {
     }
   };
 
+  const handleOtherCategoryChange = (e) => {
+    setOtherCategory(e.target.value);
+  };
+
   const handleBlur = (e) => {
     const { name, value } = e.target;
     setTouched(prev => ({
@@ -112,6 +117,11 @@ const Waitlist = () => {
       }));
     });
 
+    // Validate "Other" category
+    if (formData.businessCategory === 'Other' && !otherCategory.trim()) {
+      newErrors.otherCategory = 'Please specify your business category';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -126,15 +136,27 @@ const Waitlist = () => {
     setIsLoading(true);
 
     try {
-      // First, get the current total count to determine the position
       const countResponse = await axios.get('http://localhost:5000/api/waitlist');
       const currentTotal = countResponse.data.total || 0;
-      
-      // The new user will be at position currentTotal + 1
       const newPosition = currentTotal + 1;
 
-      // Send data to backend API
-      const response = await axios.post('http://localhost:5000/api/waitlist', formData);
+      // Prepare data - use otherCategory if "Other" is selected
+      let businessCategory = formData.businessCategory;
+      if (businessCategory === 'Other' && otherCategory.trim()) {
+        businessCategory = otherCategory.trim();
+      }
+
+      const submitData = {
+        businessName: formData.businessName,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        businessCategory: businessCategory,
+        featureInterest: formData.featureInterest,
+        instagram: formData.instagram || ''
+      };
+
+      const response = await axios.post('http://localhost:5000/api/waitlist', submitData);
       
       if (response.status === 201) {
         setQueuePosition(newPosition);
@@ -163,7 +185,6 @@ const Waitlist = () => {
 
   return (
     <div className="min-h-screen bg-[#020617] pt-20">
-      {/* Waitlist Section */}
       <section className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-12">
         <div className="container mx-auto max-w-4xl">
           {/* Header */}
@@ -297,6 +318,25 @@ const Waitlist = () => {
                   {errors.businessCategory && touched.businessCategory && (
                     <p className="text-red-400 text-sm mt-1">{errors.businessCategory}</p>
                   )}
+                  
+                  {/* Show text input when "Other" is selected */}
+                  {formData.businessCategory === 'Other' && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        name="otherCategory"
+                        value={otherCategory}
+                        onChange={handleOtherCategoryChange}
+                        placeholder="Please specify your business category"
+                        className={`w-full px-4 py-3 bg-white/5 border ${
+                          errors.otherCategory ? 'border-red-500' : 'border-white/10'
+                        } rounded-xl text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#D4AF37] transition-colors duration-200`}
+                      />
+                      {errors.otherCategory && (
+                        <p className="text-red-400 text-sm mt-1">{errors.otherCategory}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Feature Interest */}
@@ -362,7 +402,6 @@ const Waitlist = () => {
                   You're officially on the Ventra waitlist. We'll notify you as soon as we launch.
                 </p>
 
-                {/* Queue Position */}
                 <div className="inline-flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl px-8 py-4 mb-8">
                   <Users className="w-5 h-5 text-[#D4AF37]" />
                   <div>
@@ -371,7 +410,6 @@ const Waitlist = () => {
                   </div>
                 </div>
 
-                {/* Return Home Button */}
                 <RouterLink to="/">
                   <button className="bg-[#D4AF37] hover:bg-[#C5A035] text-[#0F172A] font-semibold px-8 py-3 rounded-full transition-all duration-300 shadow-lg shadow-[#D4AF37]/20 hover:shadow-[#D4AF37]/40 flex items-center justify-center gap-2 mx-auto">
                     <ArrowLeft className="w-4 h-4" />

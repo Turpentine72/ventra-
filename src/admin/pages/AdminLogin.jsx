@@ -31,18 +31,34 @@ const AdminLogin = () => {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // Demo credentials - for testing only
-      if (formData.email === 'admin@ventra.com' && formData.password === 'admin123456') {
-        localStorage.setItem('adminToken', 'demo-token-123456');
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Store token and admin data
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminId', data.admin.id);
+        localStorage.setItem('adminData', JSON.stringify(data.admin));
+        
         toast.success('Login successful!');
         navigate('/admin/dashboard');
       } else {
-        toast.error('Invalid credentials');
+        toast.error(data.message || 'Invalid credentials');
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('Failed to connect to server');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -84,7 +100,7 @@ const AdminLogin = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Enter your email"
+                  placeholder="admin@ventra.com"
                   className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#D4AF37] transition-colors duration-200"
                 />
               </div>
@@ -138,7 +154,6 @@ const AdminLogin = () => {
           </form>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-[#94A3B8] text-xs mt-6">
           © 2026 Ventra. All rights reserved.
         </p>

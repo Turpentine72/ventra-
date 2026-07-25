@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import {
   Users,
@@ -10,11 +10,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  User,
-  Mail,
-  Phone,
-  Building2,
-  Star
+  Building2
 } from 'lucide-react';
 
 const Waitlist = () => {
@@ -44,12 +40,14 @@ const Waitlist = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/waitlist', {
+      const res = await api.get('/waitlist', {
         params: { search, category, page: currentPage, limit: 10 }
       });
-      setUsers(res.data.users);
-      setTotalPages(res.data.pages);
+      console.log('Fetched users:', res.data);
+      setUsers(res.data.users || []);
+      setTotalPages(res.data.pages || 1);
     } catch (error) {
+      console.error('Error fetching users:', error);
       toast.error('Failed to load users');
     } finally {
       setLoading(false);
@@ -58,15 +56,13 @@ const Waitlist = () => {
 
   const fetchStats = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/waitlist/stats/summary');
-      // For category stats, we need to fetch all users and count
-      const allUsers = await axios.get('http://localhost:5000/api/waitlist', { params: { limit: 1000 } });
-      const userList = allUsers.data.users;
+      const res = await api.get('/waitlist');
+      const userList = res.data.users || [];
       
-      const fashion = userList.filter(u => u.businessCategory === 'Fashion Brand').length;
-      const restaurants = userList.filter(u => u.businessCategory === 'Restaurant').length;
-      const schools = userList.filter(u => u.businessCategory === 'School').length;
-      const other = userList.filter(u => !['Fashion Brand', 'Restaurant', 'School'].includes(u.businessCategory)).length;
+      const fashion = userList.filter(u => u.business_category === 'Fashion Brand').length;
+      const restaurants = userList.filter(u => u.business_category === 'Restaurant').length;
+      const schools = userList.filter(u => u.business_category === 'School').length;
+      const other = userList.filter(u => !['Fashion Brand', 'Restaurant', 'School'].includes(u.business_category)).length;
 
       setStats({
         total: userList.length,
@@ -76,7 +72,7 @@ const Waitlist = () => {
         other
       });
     } catch (error) {
-      console.error('Failed to fetch stats');
+      console.error('Failed to fetch stats:', error);
     }
   };
 
@@ -84,12 +80,29 @@ const Waitlist = () => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
     
     try {
-      await axios.delete(`http://localhost:5000/api/waitlist/${id}`);
+      console.log('Deleting user with ID:', id);
+      const response = await api.delete(`/waitlist/${id}`);
+      console.log('Delete response:', response.data);
+      
       toast.success('User deleted successfully');
       fetchUsers();
       fetchStats();
     } catch (error) {
-      toast.error('Failed to delete user');
+      console.error('Error deleting user:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        toast.error(error.response.data?.message || 'Failed to delete user');
+      } else if (error.request) {
+        // The request was made but no response was received
+        toast.error('No response from server. Please check your connection.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        toast.error('An error occurred. Please try again.');
+      }
     }
   };
 
@@ -99,11 +112,18 @@ const Waitlist = () => {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    if (!date) return 'N/A';
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return 'N/A';
+      return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return 'N/A';
+    }
   };
 
   const statCards = [
@@ -194,32 +214,36 @@ const Waitlist = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
-                    <tr key={user._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                      <td className="px-4 py-3 text-white text-sm">{user.businessName}</td>
-                      <td className="px-4 py-3 text-white text-sm hidden md:table-cell">{user.fullName}</td>
-                      <td className="px-4 py-3 text-[#94A3B8] text-sm hidden lg:table-cell">{user.email}</td>
-                      <td className="px-4 py-3 text-[#94A3B8] text-sm hidden sm:table-cell">{user.businessCategory}</td>
-                      <td className="px-4 py-3 text-[#94A3B8] text-sm hidden xl:table-cell">{user.featureInterest}</td>
-                      <td className="px-4 py-3 text-[#94A3B8] text-sm hidden xl:table-cell">{formatDate(user.createdAt)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleView(user)}
-                            className="p-1.5 rounded-lg hover:bg-white/10 text-[#94A3B8] hover:text-white transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user._id)}
-                            className="p-1.5 rounded-lg hover:bg-red-500/10 text-[#94A3B8] hover:text-red-400 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {users.map((user) => {
+                    // Get the correct ID field (Supabase uses 'id', MongoDB uses '_id')
+                    const userId = user.id || user._id;
+                    return (
+                      <tr key={userId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <td className="px-4 py-3 text-white text-sm">{user.business_name || user.businessName || 'N/A'}</td>
+                        <td className="px-4 py-3 text-white text-sm hidden md:table-cell">{user.full_name || user.fullName || 'N/A'}</td>
+                        <td className="px-4 py-3 text-[#94A3B8] text-sm hidden lg:table-cell">{user.email || 'N/A'}</td>
+                        <td className="px-4 py-3 text-[#94A3B8] text-sm hidden sm:table-cell">{user.business_category || user.businessCategory || 'N/A'}</td>
+                        <td className="px-4 py-3 text-[#94A3B8] text-sm hidden xl:table-cell">{user.feature_interest || user.featureInterest || 'N/A'}</td>
+                        <td className="px-4 py-3 text-[#94A3B8] text-sm hidden xl:table-cell">{formatDate(user.created_at || user.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleView(user)}
+                              className="p-1.5 rounded-lg hover:bg-white/10 text-[#94A3B8] hover:text-white transition-colors"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(userId)}
+                              className="p-1.5 rounded-lg hover:bg-red-500/10 text-[#94A3B8] hover:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -267,31 +291,31 @@ const Waitlist = () => {
             <div className="space-y-4">
               <div>
                 <p className="text-[#94A3B8] text-xs font-medium uppercase tracking-wider">Business Name</p>
-                <p className="text-white mt-1">{selectedUser.businessName}</p>
+                <p className="text-white mt-1">{selectedUser.business_name || selectedUser.businessName || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-[#94A3B8] text-xs font-medium uppercase tracking-wider">Full Name</p>
-                <p className="text-white mt-1">{selectedUser.fullName}</p>
+                <p className="text-white mt-1">{selectedUser.full_name || selectedUser.fullName || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-[#94A3B8] text-xs font-medium uppercase tracking-wider">Email</p>
-                <p className="text-white mt-1">{selectedUser.email}</p>
+                <p className="text-white mt-1">{selectedUser.email || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-[#94A3B8] text-xs font-medium uppercase tracking-wider">Phone</p>
-                <p className="text-white mt-1">{selectedUser.phone}</p>
+                <p className="text-white mt-1">{selectedUser.phone || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-[#94A3B8] text-xs font-medium uppercase tracking-wider">Business Category</p>
-                <p className="text-white mt-1">{selectedUser.businessCategory}</p>
+                <p className="text-white mt-1">{selectedUser.business_category || selectedUser.businessCategory || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-[#94A3B8] text-xs font-medium uppercase tracking-wider">Feature Requested</p>
-                <p className="text-white mt-1">{selectedUser.featureInterest}</p>
+                <p className="text-white mt-1">{selectedUser.feature_interest || selectedUser.featureInterest || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-[#94A3B8] text-xs font-medium uppercase tracking-wider">Date Joined</p>
-                <p className="text-white mt-1">{formatDate(selectedUser.createdAt)}</p>
+                <p className="text-white mt-1">{formatDate(selectedUser.created_at || selectedUser.createdAt)}</p>
               </div>
               {selectedUser.instagram && (
                 <div>
