@@ -43,7 +43,8 @@ const AdminLogin = () => {
 
       // Simple password check (for demo purposes)
       if (formData.password === 'admin123456' && formData.email === 'admin@ventra.com') {
-        // Store admin data in localStorage
+        // Store ALL auth data
+        localStorage.setItem('adminToken', 'logged-in'); // ← This is the key fix!
         localStorage.setItem('adminId', admin.id);
         localStorage.setItem('adminData', JSON.stringify({
           id: admin.id,
@@ -52,8 +53,6 @@ const AdminLogin = () => {
           phone: admin.phone,
           role: admin.role
         }));
-        // Also store a token for backward compatibility
-        localStorage.setItem('adminToken', 'logged_in');
         
         toast.success('Login successful!');
         navigate('/admin/dashboard');

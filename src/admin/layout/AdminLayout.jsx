@@ -13,10 +13,10 @@ const AdminLayout = ({ children }) => {
     setIsMobileSidebarOpen(false);
   }, [location]);
 
-  // Check authentication
+  // Check authentication - look for adminToken
   useEffect(() => {
-    const adminId = localStorage.getItem('adminId');
-    if (!adminId) {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
       navigate('/admin/login');
     }
   }, [navigate]);
@@ -36,9 +36,9 @@ const AdminLayout = ({ children }) => {
 
   const handleLogout = () => {
     // Remove all auth-related items
+    localStorage.removeItem('adminToken');
     localStorage.removeItem('adminId');
     localStorage.removeItem('adminData');
-    localStorage.removeItem('adminToken');
     toast.success('Logged out successfully');
     navigate('/admin/login');
   };
