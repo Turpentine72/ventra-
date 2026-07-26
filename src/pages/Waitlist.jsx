@@ -135,6 +135,7 @@ const Waitlist = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // SINGLE handleSubmit function - the improved version
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -156,25 +157,41 @@ const Waitlist = () => {
       }
 
       const submitData = {
-        business_name: formData.businessName,
-        full_name: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
+        business_name: formData.businessName.trim(),
+        full_name: formData.fullName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim(),
         business_category: businessCategory,
         feature_interest: formData.featureInterest,
-        instagram: formData.instagram || ''
+        instagram: formData.instagram ? formData.instagram.trim() : ''
       };
 
-      await waitlistAPI.create(submitData);
+      console.log('Submitting data:', submitData);
+
+      const result = await waitlistAPI.create(submitData);
+      console.log('Submission result:', result);
       
       setQueuePosition(newPosition);
       setIsSubmitted(true);
       toast.success('Successfully joined the waitlist!');
     } catch (error) {
       console.error('Error submitting form:', error);
+      
+      // Check for specific error types
       if (error.code === '23505') {
-        toast.error('Email already registered');
+        toast.error('This email is already registered on the waitlist.');
+      } else if (error.code === '23502') {
+        toast.error('Missing required field. Please fill in all required fields.');
+      } else if (error.message && error.message.includes('duplicate key')) {
+        toast.error('This email is already registered on the waitlist.');
       } else {
+        // Show detailed error in console for debugging
+        console.error('Full error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         toast.error('Failed to join waitlist. Please try again.');
       }
     } finally {

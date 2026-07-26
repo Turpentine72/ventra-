@@ -53,14 +53,23 @@ export const waitlistAPI = {
     },
 
     async create(userData) {
+        console.log('Creating user with data:', userData);
+        
         const { data, error } = await supabase
             .from('waitlist_users')
             .insert([userData])
-            .select()
-            .single();
+            .select();
 
-        if (error) throw error;
-        return data;
+        if (error) {
+            console.error('Supabase error:', error);
+            console.error('Error code:', error.code);
+            console.error('Error message:', error.message);
+            console.error('Error details:', error.details);
+            throw error;
+        }
+        
+        console.log('User created successfully:', data);
+        return data[0];
     },
 
     async delete(id) {
@@ -171,18 +180,6 @@ export const adminAPI = {
 
         if (error && error.code !== 'PGRST116') throw error;
         return data;
-    },
-
-    async verifyPassword(email, password) {
-        const admin = await this.findByEmail(email);
-        if (!admin) return null;
-        
-        // Simple password check (in production, use bcrypt on backend)
-        // For now, we'll use a simple check since we're frontend-only
-        if (password === 'admin123456' && email === 'admin@ventra.com') {
-            return admin;
-        }
-        return null;
     }
 };
 
