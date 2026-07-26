@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Sparkles, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import Logo from '../../assets/5987568110577323119_121-removebg-preview.png';
+import { adminAPI } from '../../utils/supabase';
+import Logo from '../../assets/logo.png';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -32,30 +33,35 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // Simple authentication for frontend-only app
+      // In production, you'd want proper JWT authentication
+      const admin = await adminAPI.findByEmail(formData.email);
+      
+      if (!admin) {
+        toast.error('Invalid credentials');
+        return;
+      }
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // Store token and admin data
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminId', data.admin.id);
-        localStorage.setItem('adminData', JSON.stringify(data.admin));
+      // Simple password check (for demo purposes)
+      if (formData.password === 'admin123456' && formData.email === 'admin@ventra.com') {
+        // Store admin data in localStorage
+        localStorage.setItem('adminId', admin.id);
+        localStorage.setItem('adminData', JSON.stringify({
+          id: admin.id,
+          fullName: admin.full_name,
+          email: admin.email,
+          phone: admin.phone,
+          role: admin.role
+        }));
         
         toast.success('Login successful!');
         navigate('/admin/dashboard');
       } else {
-        toast.error(data.message || 'Invalid credentials');
+        toast.error('Invalid credentials');
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Failed to connect to server');
+      toast.error('Failed to login. Please try again.');
     } finally {
       setIsLoading(false);
     }

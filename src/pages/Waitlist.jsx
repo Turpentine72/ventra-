@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import api from "../utils/axios";
 import toast from 'react-hot-toast';
 import { Sparkles, Check, ArrowLeft, Users, Loader2 } from 'lucide-react';
+import { waitlistAPI } from '../utils/supabase';
 
 const Waitlist = () => {
   const [formData, setFormData] = useState({
@@ -24,6 +24,16 @@ const Waitlist = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Get current count for queue position
+    const getCount = async () => {
+      try {
+        const stats = await waitlistAPI.getStats();
+        setQueuePosition(stats.totalUsers + 1);
+      } catch (error) {
+        console.error('Error getting count:', error);
+      }
+    };
+    getCount();
   }, []);
 
   const businessCategories = [
@@ -117,7 +127,6 @@ const Waitlist = () => {
       }));
     });
 
-    // Validate "Other" category
     if (formData.businessCategory === 'Other' && !otherCategory.trim()) {
       newErrors.otherCategory = 'Please specify your business category';
     }
@@ -136,47 +145,37 @@ const Waitlist = () => {
     setIsLoading(true);
 
     try {
-      const countResponse = await axios.get('http://localhost:5000/api/waitlist');
-      const currentTotal = countResponse.data.total || 0;
-      const newPosition = currentTotal + 1;
+      // Get current count for queue position
+      const stats = await waitlistAPI.getStats();
+      const newPosition = stats.totalUsers + 1;
 
-      // Prepare data - use otherCategory if "Other" is selected
+      // Prepare data
       let businessCategory = formData.businessCategory;
       if (businessCategory === 'Other' && otherCategory.trim()) {
         businessCategory = otherCategory.trim();
       }
 
       const submitData = {
-        businessName: formData.businessName,
-        fullName: formData.fullName,
+        business_name: formData.businessName,
+        full_name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
-        businessCategory: businessCategory,
-        featureInterest: formData.featureInterest,
+        business_category: businessCategory,
+        feature_interest: formData.featureInterest,
         instagram: formData.instagram || ''
       };
 
-      const response = await axios.post('http://localhost:5000/api/waitlist', submitData);
+      await waitlistAPI.create(submitData);
       
-      if (response.status === 201) {
-        setQueuePosition(newPosition);
-        setIsSubmitted(true);
-        toast.success('Successfully joined the waitlist!');
-      }
+      setQueuePosition(newPosition);
+      setIsSubmitted(true);
+      toast.success('Successfully joined the waitlist!');
     } catch (error) {
       console.error('Error submitting form:', error);
-      if (error.response) {
-        if (error.response.data.message) {
-          toast.error(error.response.data.message);
-        } else if (error.response.data.errors) {
-          toast.error(error.response.data.errors[0].msg);
-        } else {
-          toast.error('Failed to join waitlist. Please try again.');
-        }
-      } else if (error.request) {
-        toast.error('Cannot connect to server. Please make sure the backend is running.');
+      if (error.code === '23505') {
+        toast.error('Email already registered');
       } else {
-        toast.error('An error occurred. Please try again.');
+        toast.error('Failed to join waitlist. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -367,6 +366,21 @@ const Waitlist = () => {
                   )}
                 </div>
 
+                {/* Instagram (Optional) */}
+                <div>
+                  <label className="block text-white font-medium text-sm mb-1.5">
+                    Instagram Username <span className="text-[#94A3B8] text-xs">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="instagram"
+                    value={formData.instagram}
+                    onChange={handleInputChange}
+                    placeholder="@yourbrand"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#D4AF37] transition-colors duration-200"
+                  />
+                </div>
+
                 {/* Submit Button */}
                 <button
                   type="submit"
@@ -402,6 +416,7 @@ const Waitlist = () => {
                   You're officially on the Ventra waitlist. We'll notify you as soon as we launch.
                 </p>
 
+                {/* Queue Position */}
                 <div className="inline-flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl px-8 py-4 mb-8">
                   <Users className="w-5 h-5 text-[#D4AF37]" />
                   <div>
@@ -410,6 +425,7 @@ const Waitlist = () => {
                   </div>
                 </div>
 
+                {/* Return Home Button */}
                 <RouterLink to="/">
                   <button className="bg-[#D4AF37] hover:bg-[#C5A035] text-[#0F172A] font-semibold px-8 py-3 rounded-full transition-all duration-300 shadow-lg shadow-[#D4AF37]/20 hover:shadow-[#D4AF37]/40 flex items-center justify-center gap-2 mx-auto">
                     <ArrowLeft className="w-4 h-4" />
