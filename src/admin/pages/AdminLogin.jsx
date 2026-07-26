@@ -44,7 +44,7 @@ const AdminLogin = () => {
       // Simple password check (for demo purposes)
       if (formData.password === 'admin123456' && formData.email === 'admin@ventra.com') {
         // Store ALL auth data
-        localStorage.setItem('adminToken', 'logged-in'); // ← This is the key fix!
+        localStorage.setItem('adminToken', 'logged-in');
         localStorage.setItem('adminId', admin.id);
         localStorage.setItem('adminData', JSON.stringify({
           id: admin.id,
@@ -55,6 +55,7 @@ const AdminLogin = () => {
         }));
         
         toast.success('Login successful!');
+        console.log('Navigating to /admin/dashboard');
         navigate('/admin/dashboard');
       } else {
         toast.error('Invalid credentials');

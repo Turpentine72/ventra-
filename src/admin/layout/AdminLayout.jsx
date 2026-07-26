@@ -13,10 +13,12 @@ const AdminLayout = ({ children }) => {
     setIsMobileSidebarOpen(false);
   }, [location]);
 
-  // Check authentication - look for adminToken
+  // Check authentication - look for adminId
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
+    const adminId = localStorage.getItem('adminId');
+    console.log('AdminLayout - Checking auth, adminId:', adminId);
+    if (!adminId) {
+      console.log('No adminId found, redirecting to login');
       navigate('/admin/login');
     }
   }, [navigate]);
@@ -39,6 +41,7 @@ const AdminLayout = ({ children }) => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminId');
     localStorage.removeItem('adminData');
+    console.log('Logged out, cleared localStorage');
     toast.success('Logged out successfully');
     navigate('/admin/login');
   };
