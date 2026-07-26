@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sparkles } from 'lucide-react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { Link as ScrollLink } from 'react-scroll';
-import Logo from "../assets/5987568110577323119_121-removebg-preview.png";
+import Logo from "../assets/ventra-logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);

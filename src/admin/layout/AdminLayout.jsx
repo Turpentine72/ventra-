@@ -15,8 +15,8 @@ const AdminLayout = ({ children }) => {
 
   // Check authentication
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
+    const adminId = localStorage.getItem('adminId');
+    if (!adminId) {
       navigate('/admin/login');
     }
   }, [navigate]);
@@ -35,6 +35,9 @@ const AdminLayout = ({ children }) => {
   }, []);
 
   const handleLogout = () => {
+    // Remove all auth-related items
+    localStorage.removeItem('adminId');
+    localStorage.removeItem('adminData');
     localStorage.removeItem('adminToken');
     toast.success('Logged out successfully');
     navigate('/admin/login');

@@ -8,7 +8,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import Logo from '../../assets/5987568110577323119_121-removebg-preview.png';
+import Logo from '../../assets/ventra-logo.png';
 
 const Sidebar = ({ isOpen, setIsOpen, isMobileOpen, setIsMobileOpen, onLogout }) => {
   const menuItems = [

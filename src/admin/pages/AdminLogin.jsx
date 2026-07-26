@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Sparkles, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { adminAPI } from '../../utils/supabase';
-import Logo from '../../assets/logo.png';
+import Logo from '../../assets/ventra-logo.png';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -34,7 +34,6 @@ const AdminLogin = () => {
 
     try {
       // Simple authentication for frontend-only app
-      // In production, you'd want proper JWT authentication
       const admin = await adminAPI.findByEmail(formData.email);
       
       if (!admin) {
@@ -53,6 +52,8 @@ const AdminLogin = () => {
           phone: admin.phone,
           role: admin.role
         }));
+        // Also store a token for backward compatibility
+        localStorage.setItem('adminToken', 'logged_in');
         
         toast.success('Login successful!');
         navigate('/admin/dashboard');

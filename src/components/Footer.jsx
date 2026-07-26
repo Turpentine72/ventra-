@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
-import Logo from "../assets/5987568110577323119_121-removebg-preview.png";
+import Logo from "../assets/ventra-logo.png";
 
 const Footer = () => {
   // SVG Icon components

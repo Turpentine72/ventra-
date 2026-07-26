@@ -16,9 +16,8 @@ import Waitlist from './admin/pages/Waitlist';
 import Profile from './admin/pages/Profile';
 
 function App() {
-  // For demo purposes, we'll use a simple auth check
-  // In production, this would use proper authentication
-  const isAuthenticated = localStorage.getItem('adminToken') !== null;
+  // Check if user is authenticated by checking for adminId
+  const isAuthenticated = localStorage.getItem('adminId') !== null;
 
   return (
     <Router>
@@ -37,7 +36,7 @@ function App() {
         <Route path="/" element={<><Navbar /><Ventra /><Footer /></>} />
         <Route path="/waitlist" element={<><Navbar /><WaitlistPage /><Footer /></>} />
         
-        {/* Admin Login Route */}
+        {/* Admin Login Route - Always accessible */}
         <Route path="/admin/login" element={<AdminLogin />} />
         
         {/* Admin Routes - Protected */}
